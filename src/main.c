@@ -19,6 +19,10 @@ ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
+BOOL                CreateTrayIcon(HWND);
+BOOL                DestroyTrayIcon(HWND);
+BOOL                IsVistaOrLater();
+BOOL                IsXPOrLater();
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -204,7 +208,12 @@ BOOL CreateTrayIcon(HWND hWnd)
     nid.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP | NIF_INFO;
     nid.dwInfoFlags = NIIF_INFO;
     nid.uTimeout = 15 * 1000;		// 15 seconds. Minimum 10 seconds and maximum 30 seconds.
-    
+
+    // Show balloon message silently (for Windows XP or later).
+    if (IsXPOrLater()) nid.dwInfoFlags |= NIIF_NOSOUND;
+    // Show larger icon (Vista or later) in balloon tip or regular icon for earlier Windows.
+    if (IsVistaOrLater()) nid.dwInfoFlags |= NIIF_LARGE_ICON;
+
     StringCchCopy(nid.szTip, ARRAYSIZE(nid.szTip), APP_TITLE);
     StringCchCopy(nid.szInfo, ARRAYSIZE(nid.szInfo), szCmdLine);
     StringCchCopy(nid.szInfoTitle, ARRAYSIZE(nid.szInfoTitle), L"Notification");
@@ -222,4 +231,58 @@ BOOL DestroyTrayIcon(HWND hWnd)
     nid.uID = ID_TRAY_ICON;
 
     return Shell_NotifyIcon(NIM_DELETE, &nid);
+}
+
+BOOL IsVistaOrLater()
+{
+    OSVERSIONINFOEX osvi;
+    DWORDLONG dwlConditionMask = 0;
+    int op = VER_GREATER_EQUAL;
+
+    // Initialize the OSVERSIONINFOEX structure.
+    ZeroMemory(&osvi, sizeof(OSVERSIONINFOEX));
+    osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
+    // For Windows Vista.
+    osvi.dwMajorVersion = 6;
+    osvi.dwMinorVersion = 0;
+    osvi.wServicePackMajor = 0;
+    osvi.wServicePackMinor = 0;
+
+    // Initialize the condition mask.
+    VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, op);
+    VER_SET_CONDITION(dwlConditionMask, VER_MINORVERSION, op);
+    VER_SET_CONDITION(dwlConditionMask, VER_SERVICEPACKMAJOR, op);
+    VER_SET_CONDITION(dwlConditionMask, VER_SERVICEPACKMINOR, op);
+
+    // Perform the test.
+    return VerifyVersionInfo(&osvi,
+        VER_MAJORVERSION | VER_MINORVERSION | VER_SERVICEPACKMAJOR | VER_SERVICEPACKMINOR,
+        dwlConditionMask);
+}
+
+BOOL IsXPOrLater()
+{
+    OSVERSIONINFOEX osvi;
+    DWORDLONG dwlConditionMask = 0;
+    int op = VER_GREATER_EQUAL;
+
+    // Initialize the OSVERSIONINFOEX structure.
+    ZeroMemory(&osvi, sizeof(OSVERSIONINFOEX));
+    osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
+    // For Windows XP.
+    osvi.dwMajorVersion = 5;
+    osvi.dwMinorVersion = 1;
+    osvi.wServicePackMajor = 0;
+    osvi.wServicePackMinor = 0;
+
+    // Initialize the condition mask.
+    VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, op);
+    VER_SET_CONDITION(dwlConditionMask, VER_MINORVERSION, op);
+    VER_SET_CONDITION(dwlConditionMask, VER_SERVICEPACKMAJOR, op);
+    VER_SET_CONDITION(dwlConditionMask, VER_SERVICEPACKMINOR, op);
+
+    // Perform the test.
+    return VerifyVersionInfo(&osvi,
+        VER_MAJORVERSION | VER_MINORVERSION | VER_SERVICEPACKMAJOR | VER_SERVICEPACKMINOR,
+        dwlConditionMask);
 }
