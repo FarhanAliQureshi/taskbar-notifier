@@ -1,12 +1,18 @@
 #include "framework.h"
 #include "main.h"
+#include <strsafe.h>
+#include <shellapi.h>
 
 #define MAX_LOADSTRING 100
+#define ID_TRAY_ICON 1
+#define WM_TRAYICONMSG (WM_USER + 1)
+#define APP_TITLE L"Taskbar Notifier"
 
 // Global Variables:
 HINSTANCE hInst;                                // current instance
 WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
+WCHAR szCmdLine[MAX_PATH];
 
 // Forward declarations of functions included in this code module:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -22,7 +28,17 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
-    // TODO: Place code here.
+    // No need to proceed if user didn't give any command-line string.
+    size_t length;
+    if (SUCCEEDED(StringCchLength(lpCmdLine, MAX_PATH, &length))) 
+    {
+        if (length == 0) return 0;
+        StringCchCopyW(szCmdLine, MAX_PATH, lpCmdLine);
+    }
+    else
+    {
+        return 0;
+    }
 
     // Initialize global strings
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
@@ -51,8 +67,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     return (int) msg.wParam;
 }
-
-
 
 //
 //  FUNCTION: MyRegisterClass()
@@ -174,4 +188,38 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
         break;
     }
     return (INT_PTR)FALSE;
+}
+
+BOOL CreateTrayIcon(HWND hWnd)
+{
+    NOTIFYICONDATA nid;
+
+    ZeroMemory(&nid, sizeof(NOTIFYICONDATA));
+    nid.cbSize = sizeof(NOTIFYICONDATA);
+    nid.hWnd = hWnd;
+    nid.uID = ID_TRAY_ICON;
+    nid.uVersion = NOTIFYICON_VERSION;
+    nid.uCallbackMessage = WM_TRAYICONMSG;
+    nid.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+    nid.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP | NIF_INFO;
+    nid.dwInfoFlags = NIIF_INFO;
+    nid.uTimeout = 15 * 1000;		// 15 seconds. Minimum 10 seconds and maximum 30 seconds.
+    
+    StringCchCopy(nid.szTip, ARRAYSIZE(nid.szTip), APP_TITLE);
+    StringCchCopy(nid.szInfo, ARRAYSIZE(nid.szInfo), szCmdLine);
+    StringCchCopy(nid.szInfoTitle, ARRAYSIZE(nid.szInfoTitle), L"Notification");
+
+    return Shell_NotifyIcon(NIM_ADD, &nid);
+}
+
+BOOL DestroyTrayIcon(HWND hWnd)
+{
+    NOTIFYICONDATA nid;
+
+    ZeroMemory(&nid, sizeof(NOTIFYICONDATA));
+    nid.cbSize = sizeof(NOTIFYICONDATA);
+    nid.hWnd = hWnd;
+    nid.uID = ID_TRAY_ICON;
+
+    return Shell_NotifyIcon(NIM_DELETE, &nid);
 }
