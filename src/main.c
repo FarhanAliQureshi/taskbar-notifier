@@ -7,6 +7,7 @@
 #define ID_TRAY_ICON 1
 #define WM_TRAYICONMSG (WM_USER + 1)
 #define APP_TITLE L"Taskbar Notifier"
+#define IDT_TIMER 1
 
 // Global Variables:
 HINSTANCE hInst;                                // current instance
@@ -23,6 +24,7 @@ BOOL                CreateTrayIcon(HWND);
 BOOL                DestroyTrayIcon(HWND);
 BOOL                IsVistaOrLater();
 BOOL                IsXPOrLater();
+VOID CALLBACK       TimerProc(HWND, UINT, UINT, DWORD);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -140,6 +142,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
     {
+    case WM_CREATE:
+        // Create one-time timer to create system tray icon and display notification.
+        if (!SetTimer(hWnd, IDT_TIMER, USER_TIMER_MINIMUM, (TIMERPROC)TimerProc))
+        {
+            DestroyWindow(hWnd);
+        }
+        break;
     case WM_COMMAND:
         {
             int wmId = LOWORD(wParam);
@@ -209,9 +218,9 @@ BOOL CreateTrayIcon(HWND hWnd)
     nid.dwInfoFlags = NIIF_INFO;
     nid.uTimeout = 15 * 1000;		// 15 seconds. Minimum 10 seconds and maximum 30 seconds.
 
-    // Show balloon message silently (for Windows XP or later).
+    // Show notification message silently (for Windows XP or later).
     if (IsXPOrLater()) nid.dwInfoFlags |= NIIF_NOSOUND;
-    // Show larger icon (Vista or later) in balloon tip or regular icon for earlier Windows.
+    // Show larger icon (Vista or later) in notification, or regular icon for earlier Windows.
     if (IsVistaOrLater()) nid.dwInfoFlags |= NIIF_LARGE_ICON;
 
     StringCchCopy(nid.szTip, ARRAYSIZE(nid.szTip), APP_TITLE);
@@ -285,4 +294,16 @@ BOOL IsXPOrLater()
     return VerifyVersionInfo(&osvi,
         VER_MAJORVERSION | VER_MINORVERSION | VER_SERVICEPACKMAJOR | VER_SERVICEPACKMINOR,
         dwlConditionMask);
+}
+
+VOID CALLBACK TimerProc(HWND hWnd, UINT message, UINT idTimer, DWORD dwTime)
+{
+    // Kill the one-time timer.
+    KillTimer(hWnd, IDT_TIMER);
+
+    // Create system tray icon and display notification.
+    if (!CreateTrayIcon(hWnd))
+    {
+        DestroyWindow(hWnd);
+    }
 }
