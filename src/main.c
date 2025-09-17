@@ -6,7 +6,6 @@
 #define MAX_LOADSTRING 100
 #define ID_TRAY_ICON 1
 #define WM_TRAYICONMSG (WM_USER + 1)
-#define APP_TITLE L"Taskbar Notifier"
 #define IDT_TIMER 1
 
 // Global Variables:
@@ -48,7 +47,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     // Initialize global strings
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
-    LoadStringW(hInstance, IDC_SRC, szWindowClass, MAX_LOADSTRING);
+    LoadStringW(hInstance, IDC_APP_CLASS, szWindowClass, MAX_LOADSTRING);
     MyRegisterClass(hInstance);
 
     // Perform application initialization:
@@ -57,7 +56,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
         return FALSE;
     }
 
-    HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_SRC));
+    HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_APP_CLASS));
 
     MSG msg;
 
@@ -93,7 +92,7 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
     wcex.hIcon          = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_SRC));
     wcex.hCursor        = LoadCursor(NULL, IDC_ARROW);
     wcex.hbrBackground  = (HBRUSH)(COLOR_WINDOW+1);
-    wcex.lpszMenuName   = MAKEINTRESOURCEW(IDC_SRC);
+    wcex.lpszMenuName   = MAKEINTRESOURCEW(IDC_APP_CLASS);
     wcex.lpszClassName  = szWindowClass;
     wcex.hIconSm        = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
 
@@ -122,7 +121,8 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
       return FALSE;
    }
 
-   ShowWindow(hWnd, nCmdShow);
+   // Don't display the window of this program. Just keep it hidden.
+   //ShowWindow(hWnd, nCmdShow);
    UpdateWindow(hWnd);
 
    return TRUE;
@@ -147,6 +147,25 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         if (!SetTimer(hWnd, IDT_TIMER, USER_TIMER_MINIMUM, (TIMERPROC)TimerProc))
         {
             DestroyWindow(hWnd);
+        }
+        break;
+    case WM_TRAYICONMSG:
+        switch (lParam)
+        {
+        case WM_LBUTTONDBLCLK:		// Tray icon double-clicked.
+        case WM_LBUTTONDOWN:
+        case WM_CONTEXTMENU:
+        case WM_RBUTTONDOWN:
+        case NIN_SELECT:
+        case NIN_KEYSELECT:
+        case NIN_BALLOONTIMEOUT:	// Balloon tip timed out.
+        case NIN_BALLOONUSERCLICK:	// User clicked the balloon tip. 
+            //MessageBox(hWnd, L"closing", L"closing app", MB_OK);
+            DestroyTrayIcon(hWnd);
+            DestroyWindow(hWnd);
+            break;
+        default:					// All other messages. Reference: https://learn.microsoft.com/en-us/windows/win32/api/shellapi/nf-shellapi-shell_notifyiconw
+            return DefWindowProc(hWnd, message, wParam, lParam);
         }
         break;
     case WM_COMMAND:
@@ -223,7 +242,7 @@ BOOL CreateTrayIcon(HWND hWnd)
     // Show larger icon (Vista or later) in notification, or regular icon for earlier Windows.
     if (IsVistaOrLater()) nid.dwInfoFlags |= NIIF_LARGE_ICON;
 
-    StringCchCopy(nid.szTip, ARRAYSIZE(nid.szTip), APP_TITLE);
+    StringCchCopy(nid.szTip, ARRAYSIZE(nid.szTip), szTitle);
     StringCchCopy(nid.szInfo, ARRAYSIZE(nid.szInfo), szCmdLine);
     StringCchCopy(nid.szInfoTitle, ARRAYSIZE(nid.szInfoTitle), L"Notification");
 
