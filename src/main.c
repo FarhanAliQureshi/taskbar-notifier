@@ -24,6 +24,7 @@ BOOL                DestroyTrayIcon(HWND);
 BOOL                IsVistaOrLater();
 BOOL                IsXPOrLater();
 VOID CALLBACK       TimerProc(HWND, UINT, UINT, DWORD);
+BOOL                VerifyWindowsVersion(DWORD, DWORD, WORD, WORD);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -263,32 +264,17 @@ BOOL DestroyTrayIcon(HWND hWnd)
 
 BOOL IsVistaOrLater()
 {
-    OSVERSIONINFOEX osvi;
-    DWORDLONG dwlConditionMask = 0;
-    int op = VER_GREATER_EQUAL;
-
-    // Initialize the OSVERSIONINFOEX structure.
-    ZeroMemory(&osvi, sizeof(OSVERSIONINFOEX));
-    osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
     // For Windows Vista.
-    osvi.dwMajorVersion = 6;
-    osvi.dwMinorVersion = 0;
-    osvi.wServicePackMajor = 0;
-    osvi.wServicePackMinor = 0;
-
-    // Initialize the condition mask.
-    VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, op);
-    VER_SET_CONDITION(dwlConditionMask, VER_MINORVERSION, op);
-    VER_SET_CONDITION(dwlConditionMask, VER_SERVICEPACKMAJOR, op);
-    VER_SET_CONDITION(dwlConditionMask, VER_SERVICEPACKMINOR, op);
-
-    // Perform the test.
-    return VerifyVersionInfo(&osvi,
-        VER_MAJORVERSION | VER_MINORVERSION | VER_SERVICEPACKMAJOR | VER_SERVICEPACKMINOR,
-        dwlConditionMask);
+    return VerifyWindowsVersion(6, 0, 0, 0);
 }
 
 BOOL IsXPOrLater()
+{
+    // For Windows XP.
+    return VerifyWindowsVersion(5, 1, 0, 0);
+}
+
+BOOL VerifyWindowsVersion(DWORD dwMajorVersion, DWORD dwMinorVersion, WORD wServicePackMajor, WORD wServicePackMinor)
 {
     OSVERSIONINFOEX osvi;
     DWORDLONG dwlConditionMask = 0;
@@ -297,11 +283,10 @@ BOOL IsXPOrLater()
     // Initialize the OSVERSIONINFOEX structure.
     ZeroMemory(&osvi, sizeof(OSVERSIONINFOEX));
     osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
-    // For Windows XP.
-    osvi.dwMajorVersion = 5;
-    osvi.dwMinorVersion = 1;
-    osvi.wServicePackMajor = 0;
-    osvi.wServicePackMinor = 0;
+    osvi.dwMajorVersion = dwMajorVersion;
+    osvi.dwMinorVersion = dwMinorVersion;
+    osvi.wServicePackMajor = wServicePackMajor;
+    osvi.wServicePackMinor = wServicePackMinor;
 
     // Initialize the condition mask.
     VER_SET_CONDITION(dwlConditionMask, VER_MAJORVERSION, op);
