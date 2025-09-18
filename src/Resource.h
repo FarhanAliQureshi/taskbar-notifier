@@ -8,7 +8,7 @@
 #define IDD_ABOUTBOX                    103
 #define IDM_ABOUT                       104
 #define IDM_EXIT                        105
-#define IDI_SRC                         107
+#define IDI_APP                         107
 #define IDI_SMALL                       108
 #define IDC_SRC                         109
 #define IDC_APP_CLASS                   109

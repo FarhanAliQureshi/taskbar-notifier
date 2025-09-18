@@ -90,12 +90,14 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
     wcex.cbClsExtra     = 0;
     wcex.cbWndExtra     = 0;
     wcex.hInstance      = hInstance;
-    wcex.hIcon          = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_SRC));
+    wcex.hIcon          = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_APP));
     wcex.hCursor        = LoadCursor(NULL, IDC_ARROW);
     wcex.hbrBackground  = (HBRUSH)(COLOR_WINDOW+1);
     wcex.lpszMenuName   = MAKEINTRESOURCEW(IDC_APP_CLASS);
     wcex.lpszClassName  = szWindowClass;
-    wcex.hIconSm        = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
+    // According to following reference, Windows should automatically find and load appropiate small size icon
+    // Reference: https://learn.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassexw
+    wcex.hIconSm        = NULL;
 
     return RegisterClassExW(&wcex);
 }
